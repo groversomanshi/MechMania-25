@@ -1,4 +1,5 @@
 import ctypes
+from core.util import Vec2
 
 NUM_PLAYERS = 4
 
@@ -27,16 +28,38 @@ class FieldConfig(ctypes.Structure):
         ("height", ctypes.c_uint32),
     ]
 
+    def center(self) -> Vec2:
+        return Vec2(self.width * 0.5, self.height * 0.5)
+
+    def bottom_right(self) -> Vec2:
+        return Vec2(self.width, self.height)
+
+    def goal_a(self) -> Vec2:
+        return Vec2(0.0, self.height * 0.5)
+
+    def goal_b(self) -> Vec2:
+        return Vec2(self.width, self.height * 0.5)
+
+
 class GoalConfig(ctypes.Structure):
     _fields_ = [
-        ("height", ctypes.c_uint32),
+        ("normal_height", ctypes.c_uint32),
         ("thickness", ctypes.c_uint32),
-        ("penalty_radius", ctypes.c_uint32),
+        ("penalty_box_width", ctypes.c_uint32),
+        ("penalty_box_height", ctypes.c_uint32),
+        ("penalty_box_radius", ctypes.c_uint32),
     ]
+
+    def current_height(self, conf: "GameConfig", tick: int):
+        if tick <= conf.max_ticks:
+            return self.normal_height
+        else:
+            return self.penalty_box_height
 
 class GameConfig(ctypes.Structure):
     _fields_ = [
         ("max_ticks", ctypes.c_uint32),
+        ("endgame_ticks", ctypes.c_uint32),
         ("spawn_ball_dist", ctypes.c_float),
         ("ball", BallConfig),
         ("player", PlayerConfig),

@@ -20,12 +20,15 @@ class FieldConfig(ctypes.Structure):
     height: ctypes.c_uint32
 
 class GoalConfig(ctypes.Structure):
-    height: ctypes.c_uint32
+    normal_height: ctypes.c_uint32
     thickness: ctypes.c_uint32
-    penalty_radius: ctypes.c_uint32
+    penalty_box_width: ctypes.c_uint32
+    penalty_box_height: ctypes.c_uint32
+    penalty_box_radius: ctypes.c_uint32
 
 class GameConfig(ctypes.Structure):
     max_ticks: ctypes.c_uint32
+    endgame_ticks: ctypes.c_uint32
     spawn_ball_dist: ctypes.c_float
     ball: BallConfig
     player: PlayerConfig
