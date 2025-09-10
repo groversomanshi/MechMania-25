@@ -54,7 +54,7 @@ class GoalConfig(ctypes.Structure):
         if tick <= conf.max_ticks:
             return self.normal_height
         else:
-            return self.penalty_box_height
+            return conf.field.height
 
 class GameConfig(ctypes.Structure):
     _fields_ = [
