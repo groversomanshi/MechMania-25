@@ -1,6 +1,6 @@
 import ctypes
 from ctypes import Array
-from typing import Union, Tuple
+from typing import Union, Tuple, Optional
 from core.util import Vec2
 
 PlayerId = ctypes.c_uint32
@@ -27,6 +27,8 @@ class PlayerAction(ctypes.Structure):
     dir: Vec2
     has_pass: ctypes.c_bool
     ball_pass: Vec2
+
+    def __init__(self, dir: Vec2, ball_pass: Optional[Vec2]): ...
 
 class BallPossessionType:
     Possessed: int
@@ -55,7 +57,6 @@ class BallPossessionState(ctypes.Structure):
 class BallStagnationState(ctypes.Structure):
     center: Vec2
     tick: ctypes.c_uint32
-
 class BallState(ctypes.Structure):
     pos: Vec2
     vel: Vec2
@@ -71,7 +72,11 @@ class GameState(ctypes.Structure):
 
     @property
     def ball_possession(self) -> Union[BallPossessed, BallPassing, BallFree]: ...
+    @property
     def is_ball_free(self) -> bool: ...
+    @property
     def ball_owner(self) -> None | PlayerId: ...
+
     def team_of(self, id: PlayerId) -> None | Team: ...
     def teams(self) -> Tuple[Array[PlayerState], Array[PlayerState]]: ...
+    def team(self, team: Team) -> Array[PlayerState]: ...

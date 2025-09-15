@@ -13,9 +13,9 @@ async def run() -> None:
     path = Path(args[1])
     chan = EngineChannel.from_path(path)
 
-    await chan.handle_handshake()
+    team = await chan.handle_handshake()
 
-    strat = get_strategy()
+    strat = get_strategy(team)
 
     while True:
         await chan.handle_msg(strat)

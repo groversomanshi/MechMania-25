@@ -84,13 +84,7 @@ class EngineStatus:
     Busy = 1
     Finished = 2
 
-real_team: None | int = None
 config: None | GameConfig
-
-def get_real_team() -> int:
-    global real_team
-    assert real_team is not None
-    return real_team
 
 def get_config() -> GameConfig:
     global config
@@ -126,15 +120,16 @@ class EngineChannel:
 
         assert shm.protocol.type == ProtocolId.HandshakeMsg
 
-        global real_team
         global config
-        real_team = shm.protocol.data.handshake_msg.team
+        team = shm.protocol.data.handshake_msg.team
         config = GameConfig()
         ctypes.pointer(config)[0] = shm.protocol.data.handshake_msg.config
 
         shm.protocol.data.handshake_response = HANDSHAKE_BOT
         shm.protocol.type = ProtocolId.HandshakeResponse
         shm.sync = EngineStatus.Busy
+
+        return team
 
 
     async def handle_msg(self, strategy: Strategy):

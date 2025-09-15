@@ -111,9 +111,11 @@ class GameState(ctypes.Structure):
             case _ as unreachable:
                 assert_never(unreachable)
 
+    @property
     def is_ball_free(self):
         return self._ball_possession.type == BallPossessionType.Free
 
+    @property
     def ball_owner(self):
         if self._ball_possession.type == BallPossessionType.Possessed:
             return self._ball_possession.data.possessed.owner
@@ -126,5 +128,13 @@ class GameState(ctypes.Structure):
             return Team.Other
         return None
 
+    @property
     def teams(self):
         return (self.players[:NUM_PLAYERS], self.players[NUM_PLAYERS:])
+
+    def team(self, team: Team) -> ctypes.Array[PlayerState]:
+        if team == Team.Self:
+            return self.players[:NUM_PLAYERS]
+        else:
+            return self.players[NUM_PLAYERS:]
+
