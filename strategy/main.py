@@ -38,14 +38,36 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
     # NOTE Do not worry about what side your bot is on! 
     # The engine mirrors the world for you if you are on the right, 
     # so to you, you always appear on the left.
+
+    actions = []
+
+    # # goalee
+
+    goalee_action = PlayerAction ( 
+        Vec2(500, 300) - game.players[0].pos, 
+        None
+     )
     
-    return [
-        PlayerAction(
-            game.ball.pos - game.players[i].pos,
-            config.field.goal_other() - game.players[i].pos
-        ) 
-        for i in range(NUM_PLAYERS)
-    ]
+    do_nothing = PlayerAction(
+        Vec2(0, 0), None
+    )
+
+    actions.append(goalee_action)
+    actions.append(goalee_action)
+    actions.append(do_nothing)
+    actions.append(do_nothing)
+
+    # # ...
+
+    return actions
+    
+    # return [
+    #     PlayerAction(
+    #         game.ball.pos - game.players[i].pos,
+    #         config.field.goal_other() - game.players[i].pos
+    #     ) 
+    #     for i in range(NUM_PLAYERS)
+    # ]
 
 def do_nothing(game: GameState) -> List[PlayerAction]:
     """This strategy will do nothing :("""
@@ -54,3 +76,5 @@ def do_nothing(game: GameState) -> List[PlayerAction]:
         PlayerAction(Vec2(0, 0), None) 
         for _ in range(NUM_PLAYERS)
     ]
+
+
