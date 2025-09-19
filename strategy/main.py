@@ -30,6 +30,22 @@ def goalee_formation(score: Score) -> List[Vec2]:
         Vec2(field.x * 0.4, field.y * 0.6),
     ]
 
+def checkMove(game: GameState): 
+
+    config = get_config()
+
+    # print(game.players[3].pos.x)
+    if (game.players[3].pos.x >= 799): 
+        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[3].pos)
+
+    if (game.players[3].pos.x < 500): 
+        return PlayerAction(Vec2(500, 300) - game.players[3].pos, None) #movement 
+    if (game.players[3].pos.x >= 499): 
+        return PlayerAction(Vec2(800, 350) - game.players[3].pos, None)
+    else: 
+        return PlayerAction(Vec2(0,0), None)
+
+
 def ball_chase(game: GameState) -> List[PlayerAction]:
     """Very simple strategy to chase the ball and shoot on goal"""
     
@@ -42,22 +58,20 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
     actions = []
 
     # # goalee
-
-    goalee_action = PlayerAction ( 
-        Vec2(500, 300) - game.players[0].pos, 
-        None
-     )
     
     do_nothing = PlayerAction(
         Vec2(0, 0), None
     )
 
-    actions.append(goalee_action)
-    actions.append(goalee_action)
-    actions.append(do_nothing)
-    actions.append(do_nothing)
+    do_something = checkMove(game)
 
-    # # ...
+    
+
+    actions.append(do_nothing)
+    actions.append(do_nothing)
+    actions.append(do_nothing)
+    actions.append(do_something)
+
 
     return actions
     
