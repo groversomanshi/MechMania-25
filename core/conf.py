@@ -34,10 +34,10 @@ class FieldConfig(ctypes.Structure):
     def bottom_right(self) -> Vec2:
         return Vec2(self.width, self.height)
 
-    def goal_a(self) -> Vec2:
+    def goal_self(self) -> Vec2:
         return Vec2(0.0, self.height * 0.5)
 
-    def goal_b(self) -> Vec2:
+    def goal_other(self) -> Vec2:
         return Vec2(self.width, self.height * 0.5)
 
 
