@@ -180,6 +180,8 @@ def goalieOffense(game: GameState, playerNum: int) -> PlayerAction:
     config = get_config()
 
     if (getBallOwner(game) == playerNum): 
+        if (game.tick > 7200): 
+            return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum)) 
         return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
     return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 140)), None)
 
@@ -216,6 +218,25 @@ def anyOpBetween(game: GameState, playerNum: int, startPoint: Vec2, endPoint: Ve
                 return True
     return False
 
+def getNearestWall(game: GameState, playerNum: int) -> Vec2:
+    config = get_config()
+    field = config.field.bottom_right()
+    cur_pos = game.players[playerNum].pos
+
+    # Clamp x and y to the field boundaries
+    wall_x = min(max(cur_pos.x, 0), field.x)
+    wall_y = min(max(cur_pos.y, 0), field.y)
+
+    # Find the closest wall point
+    candidates = [
+        Vec2(0, wall_y),           # Left wall
+        Vec2(field.x, wall_y),     # Right wall
+        Vec2(wall_x, 0),           # Top wall
+        Vec2(wall_x, field.y)      # Bottom wall
+    ]
+    nearest = min(candidates, key=lambda p: cur_pos.dist(p))
+    return nearest
+
 def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
     teammates = [p for p in getAllTeammates(game) if p.id != playerNum and p.id != 0]  # exclude self and goalie
     cur_pos = game.players[playerNum].pos
@@ -236,6 +257,8 @@ def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
     config = get_config()
 
     if (getBallOwner(game) == playerNum): 
+        if (game.tick > 7200): 
+            return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum))  
         if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
            return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
         if ((not anyOpBetween(game, playerNum, game.players[playerNum].pos, game.players[3].pos)) and game.players[3].speed == 0):
@@ -251,6 +274,8 @@ def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
 def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction: 
     config = get_config()
     if (getBallOwner(game) == playerNum): 
+        if (game.tick > 7200): 
+            return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum)) 
         if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
            return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
         if ((not anyOpBetween(game, playerNum, game.players[playerNum].pos, game.players[3].pos)) and game.players[3].speed == 0): 
@@ -267,6 +292,8 @@ def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction:
 
 def strikerOffense(game: GameState, playerNum: int) -> PlayerAction: 
     config = get_config()
+    if (game.tick > 7200): 
+            return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum)) 
     if (getBallOwner(game) == playerNum): 
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
