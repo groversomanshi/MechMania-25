@@ -189,7 +189,7 @@ def goalieOffense(game: GameState, playerNum: int) -> PlayerAction:
         if (game.tick > 7200): 
             return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum)) 
         return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
-    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 120)), None)
+    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 140)), None)
 
 #MIDFIELD PLANS: 
 # --> if opposing is between main and goal, pass to support
@@ -243,23 +243,6 @@ def getNearestWall(game: GameState, playerNum: int) -> Vec2:
     nearest = min(candidates, key=lambda p: cur_pos.dist(p))
     return nearest
 
-def getNearestTeammateBest(player: PlayerState.id, game: GameState, openMatesOnly):
-    #global teamNum
-    nearestpos = Vec2(-1, -1)
-    # if teamNum == Team.Self:
-    #     teamplayers = game.team(teamNum)
-    # else:
-    #     teamplayers = game.team(not teamNum)
-    for teammate in openMatesOnly:
-        if teammate.id != player:
-            if nearestpos == Vec2(-1, -1):
-                nearestpos = teammate.pos
-                nearestid = teammate.id
-            elif openMatesOnly[player].pos.dist(teammate.pos) < openMatesOnly[player].pos.dist(nearestpos):
-                nearestpos = teammate.pos
-                nearestid = teammate.id
-    return nearestid
-
 def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
     teammates = [p for p in getAllTeammates(game) if p.id != playerNum and p.id != 0]  # exclude self and goalie
     cur_pos = game.players[playerNum].pos
@@ -269,10 +252,11 @@ def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
             open_teammates.append(mate)
     if open_teammates:
         # Pass to the nearest open teammate
-        return game.players[getNearestTeammateBest(playerNum, game, open_teammates)].pos
+        nearest_open = min(open_teammates, key=lambda t: cur_pos.dist(t.pos))
+        return nearest_open.pos
     # fallback: pass to nearest teammate (even if blocked)
-    return game.players[getNearestTeammateBest(playerNum, game, teammates)].pos
-
+    nearest = min(teammates, key=lambda t: cur_pos.dist(t.pos))
+    return nearest.pos
 
 # assume you have the ball or can easily get it 
 def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
