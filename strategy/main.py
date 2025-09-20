@@ -234,7 +234,7 @@ def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
 # assume you have the ball or can easily get it 
 def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
     config = get_config()
-    
+
     if (getBallOwner(game) == playerNum): 
         if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
            return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
@@ -307,7 +307,7 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game)
+    do_something = checkMove(game, 2)
 
     
 
