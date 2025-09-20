@@ -6,14 +6,6 @@ global teamNum
 teamNum = -1
 global chosen
 chosen = False
-global chosenp1
-chosenp1 = False
-global chosenp2
-chosenp2 = False
-global chosenp3
-chosenp3 = False
-global chosenp4
-chosenp4 = False
 
 def get_strategy(team: int):
     """This function tells the engine what strategy you want your bot to use"""
@@ -26,7 +18,7 @@ def get_strategy(team: int):
         return Strategy(goalee_formation, ball_chase)
     else:
         print("Hello! I am team B (on the right)")
-        return Strategy(goalee_formation, evil_chase)
+        return Strategy(goalee_formation, ball_chase)
     
     # NOTE when actually submitting your bot, you probably want to have the SAME strategy for both
     # sides.
@@ -224,7 +216,7 @@ def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
            return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
         return PlayerAction(Vec2(800,250), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
     else:
         return PlayerAction(gotoPos(game, playerNum, Vec2(800, 250)), None)
 
@@ -240,7 +232,7 @@ def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction:
         else: 
             return runAndKick(game, playerNum, 900, 150)
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 150)), None)
 
@@ -250,7 +242,7 @@ def strikerOffense(game: GameState, playerNum: int) -> PlayerAction:
     if (getBallOwner(game) == playerNum): 
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 500)), None)
 
@@ -314,52 +306,14 @@ def corner(game: GameState, playerNum: int) -> PlayerAction:
     if (not chosen):
         corner = random.choice(corners)
         chosen = True
-    if (getBallPossessionTeam(game) == 0):
-        if (((game.players[playerNum].pos.x - game.players[opNum].pos.x) < 10)) or (((game.players[playerNum].pos.y - game.players[opNum].pos.y) < 10)):
-            return runAway(game, playerNum, opNum)
-        else:
-            if (playerNum == 0):
-                return midfieldOffenseMain(game, playerNum)
-            if (playerNum == 1):
-                return midfieldOffenseMain(game, playerNum)
-            if (playerNum == 2):
-                return midfieldOffenseSupport(game, playerNum)
-            if (playerNum == 3):
-                return midfieldOffenseSupport(game, playerNum)
-    elif (getBallPossessionTeam(game) == -1): 
+    if (getBallPossessionTeam(game) == -1): 
         return PlayerAction(gotoPos(game, playerNum, game.players[getNearestOpToBall(game)].pos), None)
     elif (((game.players[playerNum].pos.x - game.players[opNum].pos.x) > 5)) or (((game.players[playerNum].pos.y - game.players[opNum].pos.y) > 5)):
         chosen = False
-        chosenp1 = False
-        chosenp2 = False
-        chosenp3 = False
-        chosenp4 = False
         return PlayerAction(gotoPos(game, playerNum, game.players[opNum].pos), None)
     else:
         return PlayerAction(gotoPos(game, playerNum, corner), None)
 
-
-
-def runAway(game: GameState, playerNum: int, opNum: int) -> PlayerAction: 
-    global chosenp1
-    global chosenp2
-    global chosenp3
-    global chosenp4 
-    corners = [Vec2(0, 0), Vec2(0, 600), Vec2(1000, 600), Vec2(1000, 0)]
-    corner = Vec2(0, 0)
-    if ((not chosenp1) and (playerNum == 0)):
-        corner = random.choice(corners)
-        chosenp1 = True
-    if ((not chosenp2) and (playerNum == 1)):
-        corner = random.choice(corners)
-        chosenp2 = True
-    if ((not chosenp3) and (playerNum == 2)):
-        corner = random.choice(corners)
-        chosenp3 = True
-    if ((not chosenp4) and (playerNum == 3)):
-        corner = random.choice(corners)
-        chosenp4 = True
-    return PlayerAction(gotoPos(game, playerNum, corner), None)
 
 
 def getNearestOpToBall(game: GameState):
