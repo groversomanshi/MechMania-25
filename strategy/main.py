@@ -31,7 +31,7 @@ def goalee_formation(score: Score) -> List[Vec2]:
     ]
 
 def gotoPos(game, playerNum, pos): 
-    return PlayerAction(pos - game.players[playerNum].pos, None)
+    return Vec2(pos - game.players[playerNum].pos)
 
 def getBallOwner(game: GameState):
     if game._ball_possession.type == 0:  # BallPossessionType.Possessed
@@ -87,10 +87,10 @@ def checkMove(game: GameState, playerNum):
     if (game.players[playerNum].pos.x >= endX-1): 
         return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
     if (game.players[playerNum].pos.x >= 499): 
-        return gotoPos(game, 2, Vec2(endX, endY))
+        return PlayerAction(gotoPos(game, 2, Vec2(endX, endY)), None)
     if (game.players[playerNum].pos.x < 500): 
-        return gotoPos(game, 2,  config.field.center()) #movement 
-    
+        return PlayerAction(gotoPos(game, 2,  config.field.center()), None)
+
     else: 
         return PlayerAction(Vec2(0,0), None)
 
