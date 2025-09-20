@@ -1,15 +1,21 @@
 from . import *
 
+global teamNum
+teamNum = -1
+
 def get_strategy(team: int):
     """This function tells the engine what strategy you want your bot to use"""
-    
+    global teamNum
+
     # team == 0 means I am on the left
     # team == 1 means I am on the right
     
     if team == 0:
+        teamNum = 0 
         print("Hello! I am team A (on the left)")
         return Strategy(goalee_formation, ball_chase)
     else:
+        teamNum = 1
         print("Hello! I am team B (on the right)")
         return Strategy(goalee_formation, do_nothing)
     
@@ -43,10 +49,11 @@ def getBallOwner(game: GameState):
         return -1  # Ball not possessed
 
 def getNearestOp(game: GameState, playerNum):
+    global teamNum
     curPos = game.players[playerNum].pos 
     minDist = float('inf')
     minPlayer = -1 
-    for i in range(NUM_PLAYERS, NUM_PLAYERS * 2): 
+    for i in game.team(teamNum): 
         dist = curPos.dist(game.players[i].pos)
         if dist < minDist: 
             minDist = dist
