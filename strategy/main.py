@@ -24,11 +24,31 @@ def goalee_formation(score: Score) -> List[Vec2]:
     field = config.field.bottom_right()
     
     return [
-        Vec2(field.x * 0.05, field.y * 0.5), #0
-        Vec2(field.x * 0.5, field.y * 0.2), #1
-        Vec2(field.x * 0.5, field.y * 0.3), #2
-        Vec2(field.x * 0.5, field.y * 0.7), #3
+        Vec2(field.x * 0.1, field.y * 0.5), #0
+        Vec2(field.x * 0.4, field.y * 0.4), #1
+        Vec2(field.x * 0.4, field.y * 0.5), #2
+        Vec2(field.x * 0.4, field.y * 0.6), #3
     ]
+
+def ball_pos(game: GameState) -> Vec2:
+    return(game.ball.pos)
+
+def nearest_teammate(player: PlayerState.id, game: GameState):
+    if player < NUM_PLAYERS:
+        team = 0
+    else:
+        team = 1
+    nearestpos = Vec2(-1, -1)
+    teamplayers = game.team(team)
+    for teammate in teamplayers:
+        if teammate.id != player:
+            if nearestpos == Vec2(-1, -1):
+                nearestpos = teammate.pos
+                nearestid = teammate.id
+            elif teamplayers[player].pos.dist(teammate.pos) < teamplayers[player].pos.dist(nearestpos):
+                nearestpos = teammate.pos
+                nearestid = teammate.id
+    return nearestid
 
 def checkMove(game: GameState, playerNum): 
 
