@@ -24,24 +24,23 @@ def goalee_formation(score: Score) -> List[Vec2]:
     field = config.field.bottom_right()
     
     return [
-        Vec2(field.x * 0.1, field.y * 0.5),
-        Vec2(field.x * 0.4, field.y * 0.4),
-        Vec2(field.x * 0.4, field.y * 0.5),
-        Vec2(field.x * 0.4, field.y * 0.6),
+        Vec2(field.x * 0.05, field.y * 0.5), #0
+        Vec2(field.x * 0.5, field.y * 0.2), #1
+        Vec2(field.x * 0.5, field.y * 0.3), #2
+        Vec2(field.x * 0.5, field.y * 0.7), #3
     ]
 
-def checkMove(game: GameState): 
+def checkMove(game: GameState, playerNum): 
 
     config = get_config()
 
-    # print(game.players[3].pos.x)
-    if (game.players[3].pos.x >= 799): 
-        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[3].pos)
+    if (game.players[playerNum].pos.x >= 799): 
+        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
 
-    if (game.players[3].pos.x < 500): 
-        return PlayerAction(Vec2(500, 300) - game.players[3].pos, None) #movement 
-    if (game.players[3].pos.x >= 499): 
-        return PlayerAction(Vec2(800, 350) - game.players[3].pos, None)
+    if (game.players[playerNum].pos.x < 500): 
+        return PlayerAction(Vec2(500, 300) - game.players[playerNum].pos, None) #movement 
+    if (game.players[playerNum].pos.x >= 499): 
+        return PlayerAction(Vec2(800, 350) - game.players[playerNum].pos, None)
     else: 
         return PlayerAction(Vec2(0,0), None)
 
@@ -63,14 +62,12 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game)
+    do_something = checkMove(game, 2)
 
-    
-
-    actions.append(do_nothing)
     actions.append(do_nothing)
     actions.append(do_nothing)
     actions.append(do_something)
+    actions.append(do_nothing)
 
 
     return actions
