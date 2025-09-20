@@ -1,22 +1,16 @@
 from . import *
 import math
 
-global teamNum
-teamNum = -1
-
 def get_strategy(team: int):
     """This function tells the engine what strategy you want your bot to use"""
-    global teamNum
-
+    
     # team == 0 means I am on the left
     # team == 1 means I am on the right
     
     if team == 0:
-        teamNum = 0 
         print("Hello! I am team A (on the left)")
         return Strategy(goalee_formation, ball_chase)
     else:
-        teamNum = 1
         print("Hello! I am team B (on the right)")
         return Strategy(goalee_formation, did_something)
     
@@ -279,7 +273,9 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game, 2)
+    do_something = checkMove(game)
+
+    
 
     actions.append(goalieOffense(game, 0))
     actions.append(midfieldOffenseSupport(game, 1))
