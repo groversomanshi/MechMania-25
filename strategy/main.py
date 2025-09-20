@@ -52,12 +52,6 @@ def getNearestOp(game: GameState, playerNum):
             minDist = dist
             minPlayer = i 
     return minPlayer
-    
-        Vec2(field.x * 0.1, field.y * 0.5), #0
-        Vec2(field.x * 0.4, field.y * 0.4), #1
-        Vec2(field.x * 0.4, field.y * 0.5), #2
-        Vec2(field.x * 0.4, field.y * 0.6), #3
-    ]
 
 def ball_pos(game: GameState) -> Vec2:
     return(game.ball.pos)
