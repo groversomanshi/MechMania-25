@@ -53,16 +53,13 @@ def getNearestOp(game: GameState, playerNum):
             minPlayer = i 
     return minPlayer
 
-def ball_pos(game: GameState) -> Vec2:
+def getBallPos(game: GameState) -> Vec2:
     return(game.ball.pos)
 
-def nearest_teammate(player: PlayerState.id, game: GameState):
-    if player < NUM_PLAYERS:
-        team = 0
-    else:
-        team = 1
+def getNearestTeammate(player: PlayerState.id, game: GameState):
+    global teamNum
     nearestpos = Vec2(-1, -1)
-    teamplayers = game.team(team)
+    teamplayers = game.team(teamNum)
     for teammate in teamplayers:
         if teammate.id != player:
             if nearestpos == Vec2(-1, -1):
@@ -72,6 +69,14 @@ def nearest_teammate(player: PlayerState.id, game: GameState):
                 nearestpos = teammate.pos
                 nearestid = teammate.id
     return nearestid
+
+def getAllTeammates(game: GameState):
+    global teamNum
+    return game.team(teamNum)
+
+def getAllOps(game: GameState):
+    global teamNum
+    return game.team(not teamNum)
 
 def checkMove(game: GameState, playerNum): 
 
