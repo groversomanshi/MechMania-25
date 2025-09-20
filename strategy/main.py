@@ -12,7 +12,7 @@ def get_strategy(team: int):
         return Strategy(goalee_formation, ball_chase)
     else:   
         print("Hello! I am team B (on the right)")
-        return Strategy(goalee_formation, ball_chase) #MAKE SURE THIS IS BALL_CHASE
+        return Strategy(goalee_formation, ball_chase) #MAKE SURE THIS IS BALL_CHASE (options: do_nothing, did_something)
     
     # NOTE when actually submitting your bot, you probably want to have the SAME strategy for both
     # sides.
@@ -234,6 +234,7 @@ def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
 # assume you have the ball or can easily get it 
 def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
     config = get_config()
+    
     if (getBallOwner(game) == playerNum): 
         if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
            return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
