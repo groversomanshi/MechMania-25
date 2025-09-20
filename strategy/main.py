@@ -106,14 +106,14 @@ def getAllOps(game: GameState):
 
 def isOpInPassingRadius(game: GameState):
     opplayers = game.team(Team.Other)
-    currentowner = game.ball_owner
-    if currentowner != None and currentowner < 4:
+    currentowner = getBallOwner(game)
+    count = 0
+    if currentowner != -1 and currentowner < 4:
         for i in range(4):
             ballandopdist = game.ball.pos.dist(opplayers[i].pos)
             if ballandopdist <= game.players[i].pickup_radius:
-                return True
-        return False
-    return None
+                count += 1
+    return count
 
 def checkMove(game: GameState, playerNum): 
 
@@ -121,7 +121,7 @@ def checkMove(game: GameState, playerNum):
     # print("Nearest Opponent", getNearestOp(playerNum, game))
     # print("All Teammates", getAllTeammates(game))
     # print("All Opponents", getAllOps(game))
-    # print(isOpInPassingRadius(game))
+    print(isOpInPassingRadius(game))
 
     config = get_config()
     endX = 750 
@@ -130,6 +130,7 @@ def checkMove(game: GameState, playerNum):
 
     #print("ball owned by: ", getBallOwner(game))
     #print("nearest OP player: ", getNearestOp(game, 2))
+
 
     if (game.players[playerNum].pos.x >= endX-1): 
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
@@ -289,7 +290,12 @@ def did_something(game: GameState) -> List[PlayerAction]:
 
     return actions
 
-
+#if opponent is in your picking radius, pass to your teammate
+def ifOpInRadius(game: GameState):
+    if isOpInPassingRadius(game) > 0:
+        ballowner = getBallOwner(game)
+        passvector = bestTeammatePass(game, ballowner)
+        return kickTo(game, passvector, ballowner)
 
 def ball_chase(game: GameState) -> List[PlayerAction]:
     """Very simple strategy to chase the ball and shoot on goal"""
