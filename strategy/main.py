@@ -24,6 +24,35 @@ def goalee_formation(score: Score) -> List[Vec2]:
     field = config.field.bottom_right()
     
     return [
+        Vec2(field.x * 0.1, field.y * 0.5),
+        Vec2(field.x * 0.4, field.y * 0.4),
+        Vec2(field.x * 0.4, field.y * 0.5),
+        Vec2(field.x * 0.4, field.y * 0.6),
+    ]
+
+def gotoPos(game, playerNum, pos): 
+    return PlayerAction(pos - game.players[playerNum].pos, None)
+
+def getBallOwner(game: GameState):
+    if game._ball_possession.type == 0:  # BallPossessionType.Possessed
+        num = game._ball_possession.data.possessed.owner
+        if num > 9:
+            num = -1
+        return num
+    else:
+        return -1  # Ball not possessed
+
+def getNearestOp(game: GameState, playerNum):
+    curPos = game.players[playerNum].pos 
+    minDist = float('inf')
+    minPlayer = -1 
+    for i in range(NUM_PLAYERS, NUM_PLAYERS * 2): 
+        dist = curPos.dist(game.players[i].pos)
+        if dist < minDist: 
+            minDist = dist
+            minPlayer = i 
+    return minPlayer
+    
         Vec2(field.x * 0.1, field.y * 0.5), #0
         Vec2(field.x * 0.4, field.y * 0.4), #1
         Vec2(field.x * 0.4, field.y * 0.5), #2
@@ -54,13 +83,20 @@ def checkMove(game: GameState, playerNum):
 
     config = get_config()
 
-    if (game.players[playerNum].pos.x >= 799): 
-        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
+    endX = 750 
+    endY = 500
 
-    if (game.players[playerNum].pos.x < 500): 
-        return PlayerAction(Vec2(500, 300) - game.players[playerNum].pos, None) #movement 
+
+    print("ball owned by: ", getBallOwner(game))
+    print("nearest OP player: ", getNearestOp(game, 2))
+
+    if (game.players[playerNum].pos.x >= endX-1): 
+        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
     if (game.players[playerNum].pos.x >= 499): 
-        return PlayerAction(Vec2(800, 350) - game.players[playerNum].pos, None)
+        return gotoPos(game, 2, Vec2(endX, endY))
+    if (game.players[playerNum].pos.x < 500): 
+        return gotoPos(game, 2,  config.field.center()) #movement 
+    
     else: 
         return PlayerAction(Vec2(0,0), None)
 
