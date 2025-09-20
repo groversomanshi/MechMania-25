@@ -1,18 +1,24 @@
 from . import *
 import math
+import random
+
+global teamNum
+teamNum = -1
+global chosen
+chosen = False
 
 def get_strategy(team: int):
     """This function tells the engine what strategy you want your bot to use"""
     
     # team == 0 means I am on the left
     # team == 1 means I am on the right
-    teamNum = Team #########EDIT teamNum to be a placeholder for which team we belong to
+    
     if team == 0:
         print("Hello! I am team A (on the left)")
         return Strategy(goalee_formation, ball_chase)
-    else:   
+    else:
         print("Hello! I am team B (on the right)")
-        return Strategy(goalee_formation, ball_chase) #MAKE SURE THIS IS BALL_CHASE (options: do_nothing, did_something)
+        return Strategy(goalee_formation, ball_chase)
     
     # NOTE when actually submitting your bot, you probably want to have the SAME strategy for both
     # sides.
@@ -31,10 +37,8 @@ def goalee_formation(score: Score) -> List[Vec2]:
         Vec2(field.x * 0.4, field.y * 0.6),
     ]
 
-def gotoPos(game: GameState, playerNum: PlayerState.id, pos: Vec2):
-    teamplayers, opplayers = game.team(Team.Self), game.team(Team.Other)
-    allplayers = teamplayers + opplayers
-    return Vec2(pos.x - allplayers[playerNum].pos.x, pos.y - allplayers[playerNum].pos.y)
+def gotoPos(game, playerNum, pos): 
+    return pos - game.players[playerNum].pos
 
 def getBallOwner(game: GameState):
     if game._ball_possession.type == 0:  # BallPossessionType.Possessed
@@ -63,37 +67,14 @@ def getNearestOp(game: GameState, playerNum):
             minDist = dist
             minPlayer = i.id
     return minPlayer
-def getNearestOp(player: PlayerState.id, game: GameState):
-    #global teamNum
-    nearestpos = Vec2(-1, -1)
-    # if teamNum == Team.Self:
-    #     teamplayers = game.team(teamNum)
-    #     opplayers = game.team(not teamNum)
-    # else:
-    #     teamplayers = game.team(not teamNum)
-    #     opplayers = game.team(teamNum)
-    teamplayers = game.team(Team.Self)
-    opplayers = game.team(Team.Other)
-    for op in opplayers:
-        if nearestpos == Vec2(-1, -1):
-            nearestpos = op.pos
-            nearestid = op.id
-        elif teamplayers[player].pos.dist(op.pos) < teamplayers[player].pos.dist(nearestpos):
-            nearestpos = op.pos
-            nearestid = op.id
-    return nearestid
 
 def getBallPos(game: GameState) -> Vec2:
     return(game.ball.pos)
 
-def getNearestTeammate(player: PlayerState.id, game: GameState):
-    #global teamNum
+def getNearestTeammate( game: GameState, player: PlayerState.id):
+    global teamNum
     nearestpos = Vec2(-1, -1)
-    # if teamNum == Team.Self:
-    #     teamplayers = game.team(teamNum)
-    # else:
-    #     teamplayers = game.team(not teamNum)
-    teamplayers = game.team(Team.Self)
+    teamplayers = game.team(teamNum)
     for teammate in teamplayers:
         if teammate.id != player:
             if nearestpos == Vec2(-1, -1):
@@ -116,19 +97,11 @@ def getAllOps(game: GameState):
     return game.team(not teamNum)
 
 def checkMove(game: GameState, playerNum): 
-
-    # print("Nearest Teammate", getNearestTeammate(playerNum, game))
-    # print("Nearest Opponent", getNearestOp(playerNum, game))
-    # print("All Teammates", getAllTeammates(game))
-    # print("All Opponents", getAllOps(game))
-
     config = get_config()
     endX = 750 
     endY = 500
-
-
-    #print("ball owned by: ", getBallOwner(game))
-    #print("nearest OP player: ", getNearestOp(game, 2))
+    # print("ball owned by: ", getBallOwner(game))
+    # print("nearest OP player: ", getNearestOp(game, 2))
 
     if (game.players[playerNum].pos.x >= endX-1): 
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
@@ -181,7 +154,7 @@ def goalieOffense(game: GameState, playerNum: int) -> PlayerAction:
 
     if (getBallOwner(game) == playerNum): 
         return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
-    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 140)), None)
+    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 120)), None)
 
 #MIDFIELD PLANS: 
 # --> if opposing is between main and goal, pass to support
@@ -234,7 +207,6 @@ def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
 # assume you have the ball or can easily get it 
 def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
     config = get_config()
-
     if (getBallOwner(game) == playerNum): 
         if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
            return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
@@ -244,7 +216,9 @@ def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
            return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
         return PlayerAction(Vec2(800,250), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else:
         return PlayerAction(gotoPos(game, playerNum, Vec2(800, 250)), None)
 
@@ -260,7 +234,9 @@ def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction:
         else: 
             return runAndKick(game, playerNum, 900, 150)
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 150)), None)
 
@@ -270,10 +246,22 @@ def strikerOffense(game: GameState, playerNum: int) -> PlayerAction:
     if (getBallOwner(game) == playerNum): 
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
-        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+        return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 500)), None)
 
+def isOpInPassingRadius(game: GameState):
+    opplayers = game.team(Team.Other)
+    currentowner = getBallOwner(game)
+    count = 0
+    if currentowner != -1 and currentowner < 4:
+        for i in range(4):
+            ballandopdist = game.ball.pos.dist(opplayers[i].pos)
+            if ballandopdist <= game.players[i].pickup_radius:
+                count += 1
+    return count
 
 def did_something(game: GameState) -> List[PlayerAction]:
     actions = []
@@ -307,7 +295,7 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game, 2)
+    do_something = checkMove(game, 0)
 
     
 
@@ -327,11 +315,88 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
     #     for i in range(NUM_PLAYERS)
     # ]
 
-def do_nothing(game: GameState) -> List[PlayerAction]:
-    """This strategy will do nothing :("""
+def ez_chase(game: GameState) -> List[PlayerAction]:
+    """Very simple strategy to chase the ball and shoot on goal"""
     
-    return [
-        PlayerAction(Vec2(0, 0), None) 
-        for _ in range(NUM_PLAYERS)
-    ]
+    config = get_config()
+    
+    # NOTE Do not worry about what side your bot is on! 
+    # The engine mirrors the world for you if you are on the right, 
+    # so to you, you always appear on the left.
 
+    actions = []
+
+    # # goalee
+    
+    do_nothing = PlayerAction(
+        Vec2(0, 0), None
+    )
+
+    do_something = checkMove(game, 0)
+
+    
+
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+
+
+    return actions
+
+
+def corner(game: GameState, playerNum: int) -> PlayerAction:
+    global chosen
+    opNum = getNearestOpToBall(game)
+    ballCoords = getBallPos(game)
+    corners = [Vec2(0, 600), Vec2(0, 0), Vec2(1000, 600), Vec2(1000, 0)]
+    corner = Vec2(0, 0)
+    if (not chosen):
+        corner = random.choice(corners)
+        chosen = True
+    #if (((game.players[playerNum].pos.x - ballCoords.x) > 1)) or (((game.players[playerNum].pos.y - ballCoords.y) > 1)):
+        #chosen = False
+        #return PlayerAction(gotoPos(game, playerNum, ballCoords), None)
+    #else:
+        #return PlayerAction(gotoPos(game, playerNum, corner), None)
+    return PlayerAction(gotoPos(game, playerNum, ballCoords), None)
+
+
+
+def getNearestOpToBall(game: GameState):
+    global teamNum
+    curPos = getBallPos(game) 
+    minDist = float('inf')
+    minPlayer = -1 
+    for i in game.team(teamNum): 
+        dist = curPos.dist(game.players[i.id].pos)
+        if dist < minDist: 
+            minDist = dist
+            minPlayer = i.id
+    return minPlayer
+
+def evil_chase(game: GameState) -> List[PlayerAction]:
+    """Very simple strategy to chase the ball and shoot on goal"""
+    
+    config = get_config()
+    
+    # NOTE Do not worry about what side your bot is on! 
+    # The engine mirrors the world for you if you are on the right, 
+    # so to you, you always appear on the left.
+
+    actions = []
+
+    # # goalee
+    
+    do_nothing = PlayerAction(
+        Vec2(0, 0), None
+    )
+
+    
+
+    actions.append(corner(game, 0))
+    actions.append(corner(game, 1))
+    actions.append(corner(game, 2))
+    actions.append(corner(game, 3))
+
+    return actions
