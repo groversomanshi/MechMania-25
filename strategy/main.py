@@ -52,17 +52,6 @@ def getBallPossessionTeam(game: GameState) -> int:
     else:
         return -1  # Ball not possessed by any team
 
-def getNearestOp(game: GameState, playerNum):
-    global teamNum
-    curPos = game.players[playerNum].pos 
-    minDist = float('inf')
-    minPlayer = -1 
-    for i in game.team(teamNum): 
-        dist = curPos.dist(game.players[i.id].pos)
-        if dist < minDist: 
-            minDist = dist
-            minPlayer = i.id
-    return minPlayer
 def getNearestOp(player: PlayerState.id, game: GameState):
     #global teamNum
     nearestpos = Vec2(-1, -1)
@@ -109,11 +98,22 @@ def getNearestTeammatePos(game: GameState, player: PlayerState.id):
 
 def getAllTeammates(game: GameState):
     global teamNum
-    return game.team(teamNum)
+    return game.team(Team.Self)
 
 def getAllOps(game: GameState):
     global teamNum
-    return game.team(not teamNum)
+    return game.team(Team.Other)
+
+def isOpInPassingRadius(game: GameState):
+    opplayers = game.team(Team.Other)
+    currentowner = game.ball_owner
+    if currentowner != None and currentowner < 4:
+        for i in range(4):
+            ballandopdist = game.ball.pos.dist(opplayers[i].pos)
+            if ballandopdist <= game.players[i].pickup_radius:
+                return True
+        return False
+    return None
 
 def checkMove(game: GameState, playerNum): 
 
@@ -121,6 +121,7 @@ def checkMove(game: GameState, playerNum):
     # print("Nearest Opponent", getNearestOp(playerNum, game))
     # print("All Teammates", getAllTeammates(game))
     # print("All Opponents", getAllOps(game))
+    # print(isOpInPassingRadius(game))
 
     config = get_config()
     endX = 750 
@@ -307,7 +308,7 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game)
+    do_something = checkMove(game, 1)
 
     
 
