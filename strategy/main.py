@@ -217,6 +217,8 @@ def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
         return PlayerAction(Vec2(800,250), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
         return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else:
         return PlayerAction(gotoPos(game, playerNum, Vec2(800, 250)), None)
 
@@ -233,6 +235,8 @@ def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction:
             return runAndKick(game, playerNum, 900, 150)
     elif (getBallPossessionTeam(game) != 0): 
         return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 150)), None)
 
@@ -243,9 +247,21 @@ def strikerOffense(game: GameState, playerNum: int) -> PlayerAction:
         return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
     elif (getBallPossessionTeam(game) != 0): 
         return corner(game, playerNum)
+    elif (getBallPossessionTeam(game) == 0 and isOpInPassingRadius(game)): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None); 
     else: 
         return PlayerAction(gotoPos(game, playerNum, Vec2(900, 500)), None)
 
+def isOpInPassingRadius(game: GameState):
+    opplayers = game.team(Team.Other)
+    currentowner = getBallOwner(game)
+    count = 0
+    if currentowner != -1 and currentowner < 4:
+        for i in range(4):
+            ballandopdist = game.ball.pos.dist(opplayers[i].pos)
+            if ballandopdist <= game.players[i].pickup_radius:
+                count += 1
+    return count
 
 def did_something(game: GameState) -> List[PlayerAction]:
     actions = []
@@ -279,6 +295,8 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
+    do_something = checkMove(game, 0)
+
     
 
     actions.append(goalieOffense(game, 0))
@@ -297,22 +315,51 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
     #     for i in range(NUM_PLAYERS)
     # ]
 
+def ez_chase(game: GameState) -> List[PlayerAction]:
+    """Very simple strategy to chase the ball and shoot on goal"""
+    
+    config = get_config()
+    
+    # NOTE Do not worry about what side your bot is on! 
+    # The engine mirrors the world for you if you are on the right, 
+    # so to you, you always appear on the left.
+
+    actions = []
+
+    # # goalee
+    
+    do_nothing = PlayerAction(
+        Vec2(0, 0), None
+    )
+
+    do_something = checkMove(game, 0)
+
+    
+
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+
+
+    return actions
+
 
 def corner(game: GameState, playerNum: int) -> PlayerAction:
     global chosen
-    opNum = getBallOwner(game)
+    opNum = getNearestOpToBall(game)
+    ballCoords = getBallPos(game)
     corners = [Vec2(0, 600), Vec2(0, 0), Vec2(1000, 600), Vec2(1000, 0)]
     corner = Vec2(0, 0)
     if (not chosen):
         corner = random.choice(corners)
         chosen = True
-    if (getBallPossessionTeam(game) == -1): 
-        return PlayerAction(gotoPos(game, playerNum, game.players[getNearestOpToBall(game)].pos), None)
-    elif (((game.players[playerNum].pos.x - game.players[opNum].pos.x) > 5)) or (((game.players[playerNum].pos.y - game.players[opNum].pos.y) > 5)):
-        chosen = False
-        return PlayerAction(gotoPos(game, playerNum, game.players[opNum].pos), None)
-    else:
-        return PlayerAction(gotoPos(game, playerNum, corner), None)
+    #if (((game.players[playerNum].pos.x - ballCoords.x) > 1)) or (((game.players[playerNum].pos.y - ballCoords.y) > 1)):
+        #chosen = False
+        #return PlayerAction(gotoPos(game, playerNum, ballCoords), None)
+    #else:
+        #return PlayerAction(gotoPos(game, playerNum, corner), None)
+    return PlayerAction(gotoPos(game, playerNum, ballCoords), None)
 
 
 
