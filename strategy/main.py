@@ -1,4 +1,5 @@
 from . import *
+import math
 
 global teamNum
 teamNum = -1
@@ -17,7 +18,7 @@ def get_strategy(team: int):
     else:
         teamNum = 1
         print("Hello! I am team B (on the right)")
-        return Strategy(goalee_formation, do_nothing)
+        return Strategy(goalee_formation, did_something)
     
     # NOTE when actually submitting your bot, you probably want to have the SAME strategy for both
     # sides.
@@ -37,7 +38,7 @@ def goalee_formation(score: Score) -> List[Vec2]:
     ]
 
 def gotoPos(game, playerNum, pos): 
-    return Vec2(pos - game.players[playerNum].pos)
+    return pos - game.players[playerNum].pos
 
 def getBallOwner(game: GameState):
     if game._ball_possession.type == 0:  # BallPossessionType.Possessed
@@ -48,22 +49,29 @@ def getBallOwner(game: GameState):
     else:
         return -1  # Ball not possessed
 
+def getBallPossessionTeam(game: GameState) -> int:
+    # Returns 0 for Self, 1 for Other, or -1 if no team possesses the ball
+    if game._ball_possession.type == 0:  # BallPossessionType.Possessed
+        return game._ball_possession.data.possessed.team
+    else:
+        return -1  # Ball not possessed by any team
+
 def getNearestOp(game: GameState, playerNum):
     global teamNum
     curPos = game.players[playerNum].pos 
     minDist = float('inf')
     minPlayer = -1 
     for i in game.team(teamNum): 
-        dist = curPos.dist(game.players[i].pos)
+        dist = curPos.dist(game.players[i.id].pos)
         if dist < minDist: 
             minDist = dist
-            minPlayer = i 
+            minPlayer = i.id
     return minPlayer
 
 def getBallPos(game: GameState) -> Vec2:
     return(game.ball.pos)
 
-def getNearestTeammate(player: PlayerState.id, game: GameState):
+def getNearestTeammate( game: GameState, player: PlayerState.id):
     global teamNum
     nearestpos = Vec2(-1, -1)
     teamplayers = game.team(teamNum)
@@ -77,6 +85,9 @@ def getNearestTeammate(player: PlayerState.id, game: GameState):
                 nearestid = teammate.id
     return nearestid
 
+def getNearestTeammatePos(game: GameState, player: PlayerState.id):
+    return game.players[game.getNearestTeammate(player, game)].pos
+
 def getAllTeammates(game: GameState):
     global teamNum
     return game.team(teamNum)
@@ -86,25 +97,169 @@ def getAllOps(game: GameState):
     return game.team(not teamNum)
 
 def checkMove(game: GameState, playerNum): 
-
     config = get_config()
-
     endX = 750 
     endY = 500
-
-
-    print("ball owned by: ", getBallOwner(game))
-    print("nearest OP player: ", getNearestOp(game, 2))
+    # print("ball owned by: ", getBallOwner(game))
+    # print("nearest OP player: ", getNearestOp(game, 2))
 
     if (game.players[playerNum].pos.x >= endX-1): 
-        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
+        return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
     if (game.players[playerNum].pos.x >= 499): 
         return PlayerAction(gotoPos(game, 2, Vec2(endX, endY)), None)
     if (game.players[playerNum].pos.x < 500): 
         return PlayerAction(gotoPos(game, 2,  config.field.center()), None)
-
     else: 
         return PlayerAction(Vec2(0,0), None)
+    
+def kickTo(game, pos, playerNum): 
+    return pos - game.players[playerNum].pos
+
+
+def getBetweenObjects(closer: Vec2, farther: Vec2, fraction: float, max_dist: float = None) -> Vec2:
+    # Returns a point that is `fraction` of the way from closer to farther,
+    # but never more than max_dist pixels away from closer.
+    direction = farther - closer
+    distance = direction.norm()
+    if max_dist is not None and distance > 0:
+        max_fraction = min(1.0, max_dist / distance)
+        fraction = min(fraction, max_fraction)
+    return closer + direction * fraction
+
+def getBetweenObjectsRadius(center: Vec2, pos: Vec2, R: float) -> Vec2:
+    """
+    Returns a point on a circle of radius R around center, in the direction of pos.
+    """
+    direction = pos - center
+    norm = direction.norm()
+    if norm == 0:
+        # If pos == center, return a default point on the circle
+        return center + Vec2(R, 0)
+    unit_dir = direction * (1.0 / norm)
+    return center + unit_dir * R
+
+
+def isBetweenObjects(middle: Vec2, closer: Vec2, farther: Vec2) -> bool:
+    # Project middle onto the line segment and check if it lies between closer and farther
+    ab = farther - closer
+    am = middle - closer
+    ab_dot_ab = ab.dot(ab)
+    if ab_dot_ab == 0:
+        return False
+    t = am.dot(ab) / ab_dot_ab
+    return 0 <= t <= 1
+
+def goalieOffense(game: GameState, playerNum: int) -> PlayerAction: 
+    config = get_config()
+
+    if (getBallOwner(game) == playerNum): 
+        return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
+    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 120)), None)
+
+#MIDFIELD PLANS: 
+# --> if opposing is between main and goal, pass to support
+
+def runAndKick(game: GameState, playerNum: int, endX, endY) -> PlayerAction:
+    config = get_config()
+    # print("ball owned by: ", getBallOwner(game))
+    # print("nearest OP player: ", getNearestOp(game, 2))
+    if (game.players[playerNum].pos.x < endX): 
+        return PlayerAction(gotoPos(game, playerNum, Vec2(endX, endY)), None)
+    if (game.players[playerNum].pos.x >= endX-1): 
+        return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
+    else: 
+        return PlayerAction(gotoPos(game, playerNum, Vec2(850, 300)), None)
+
+
+def anyOpBetween(game: GameState, playerNum: int, startPoint: Vec2, endPoint: Vec2, threshold: float = 30.0) -> bool:
+    # Check if any opposing player is close enough to block the line between startPoint and endPoint
+    def point_line_dist(p: Vec2, a: Vec2, b: Vec2) -> float:
+        # Distance from point p to line segment ab
+        ap = p - a
+        ab = b - a
+        ab_norm_sq = ab.norm_sq()
+        if ab_norm_sq == 0:
+            return ap.norm()
+        t = max(0, min(1, ap.dot(ab) / ab_norm_sq))
+        closest = a + ab * t
+        return (p - closest).norm()
+    for op in getAllOps(game):
+        if isBetweenObjects(op.pos, startPoint, endPoint):
+            if point_line_dist(op.pos, startPoint, endPoint) < threshold:
+                return True
+    return False
+
+def bestTeammatePass(game: GameState, playerNum: int) -> Vec2:
+    teammates = [p for p in getAllTeammates(game) if p.id != playerNum and p.id != 0]  # exclude self and goalie
+    cur_pos = game.players[playerNum].pos
+    open_teammates = []
+    for mate in teammates:
+        if not anyOpBetween(game, playerNum, cur_pos, mate.pos):
+            open_teammates.append(mate)
+    if open_teammates:
+        # Pass to the nearest open teammate
+        nearest_open = min(open_teammates, key=lambda t: cur_pos.dist(t.pos))
+        return nearest_open.pos
+    # fallback: pass to nearest teammate (even if blocked)
+    nearest = min(teammates, key=lambda t: cur_pos.dist(t.pos))
+    return nearest.pos
+
+# assume you have the ball or can easily get it 
+def midfieldOffenseMain(game: GameState, playerNum: int) -> PlayerAction:
+    config = get_config()
+    if (getBallOwner(game) == playerNum): 
+        if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
+           return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
+        if ((not anyOpBetween(game, playerNum, game.players[playerNum].pos, game.players[3].pos)) and game.players[3].speed == 0):
+           return PlayerAction(Vec2(0,0), kickTo(game, game.players[3].pos, playerNum))
+        if ((not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other()))): 
+           return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
+        return PlayerAction(Vec2(800,250), kickTo(game, config.field.goal_other(), playerNum))
+    elif (getBallPossessionTeam(game) != 0): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+    else:
+        return PlayerAction(gotoPos(game, playerNum, Vec2(800, 250)), None)
+
+def midfieldOffenseSupport(game: GameState, playerNum: int) -> PlayerAction: 
+    config = get_config()
+    if (getBallOwner(game) == playerNum): 
+        if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, config.field.goal_other())): 
+           return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
+        if ((not anyOpBetween(game, playerNum, game.players[playerNum].pos, game.players[3].pos)) and game.players[3].speed == 0): 
+           return PlayerAction(Vec2(0,0), kickTo(game, game.players[3].pos, playerNum))
+        if (not anyOpBetween(game, playerNum, game.players[playerNum].pos, Vec2(900, 250))): 
+            return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
+        else: 
+            return runAndKick(game, playerNum, 900, 150)
+    elif (getBallPossessionTeam(game) != 0): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+    else: 
+        return PlayerAction(gotoPos(game, playerNum, Vec2(900, 150)), None)
+
+
+def strikerOffense(game: GameState, playerNum: int) -> PlayerAction: 
+    config = get_config()
+    if (getBallOwner(game) == playerNum): 
+        return PlayerAction(Vec2(0,0), kickTo(game, config.field.goal_other(), playerNum))
+    elif (getBallPossessionTeam(game) != 0): 
+        return PlayerAction(gotoPos(game, playerNum, getBallPos(game)), None)
+    else: 
+        return PlayerAction(gotoPos(game, playerNum, Vec2(900, 500)), None)
+
+
+def did_something(game: GameState) -> List[PlayerAction]:
+    actions = []
+
+    do_something = checkMove(game, 2)
+
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+    actions.append(do_something)
+
+
+    return actions
+
 
 
 def ball_chase(game: GameState) -> List[PlayerAction]:
@@ -126,10 +281,10 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
 
     do_something = checkMove(game, 2)
 
-    actions.append(do_nothing)
-    actions.append(do_nothing)
-    actions.append(do_something)
-    actions.append(do_nothing)
+    actions.append(goalieOffense(game, 0))
+    actions.append(midfieldOffenseSupport(game, 1))
+    actions.append(midfieldOffenseMain(game, 2))
+    actions.append(strikerOffense(game, 3))
 
 
     return actions
@@ -149,5 +304,4 @@ def do_nothing(game: GameState) -> List[PlayerAction]:
         PlayerAction(Vec2(0, 0), None) 
         for _ in range(NUM_PLAYERS)
     ]
-
 
