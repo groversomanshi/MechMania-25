@@ -12,7 +12,7 @@ def get_strategy(team: int):
         return Strategy(goalee_formation, ball_chase)
     else:
         print("Hello! I am team B (on the right)")
-        return Strategy(goalee_formation, did_something)
+        return Strategy(goalee_formation, ball_chase) #MAKE SURE THIS IS BALL_CHASE
     
     # NOTE when actually submitting your bot, you probably want to have the SAME strategy for both
     # sides.
