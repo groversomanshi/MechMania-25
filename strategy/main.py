@@ -183,7 +183,7 @@ def goalieOffense(game: GameState, playerNum: int) -> PlayerAction:
         if (game.tick > 7200): 
             return PlayerAction(Vec2(0,0), kickTo(game, getNearestWall(game, playerNum), playerNum)) 
         return PlayerAction(Vec2(0,0), kickTo(game, bestTeammatePass(game, playerNum), playerNum))
-    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 140)), None)
+    return PlayerAction(gotoPos(game, playerNum, getBetweenObjectsRadius(config.field.goal_self(), getBallPos(game), 130)), None)
 
 #MIDFIELD PLANS: 
 # --> if opposing is between main and goal, pass to support
