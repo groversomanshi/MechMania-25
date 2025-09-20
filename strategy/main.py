@@ -1,15 +1,21 @@
 from . import *
 
+global teamNum
+teamNum = -1
+
 def get_strategy(team: int):
     """This function tells the engine what strategy you want your bot to use"""
-    
+    global teamNum
+
     # team == 0 means I am on the left
     # team == 1 means I am on the right
     
     if team == 0:
+        teamNum = 0 
         print("Hello! I am team A (on the left)")
         return Strategy(goalee_formation, ball_chase)
     else:
+        teamNum = 1
         print("Hello! I am team B (on the right)")
         return Strategy(goalee_formation, do_nothing)
     
@@ -30,18 +36,73 @@ def goalee_formation(score: Score) -> List[Vec2]:
         Vec2(field.x * 0.4, field.y * 0.6),
     ]
 
-def checkMove(game: GameState): 
+def gotoPos(game, playerNum, pos): 
+    return Vec2(pos - game.players[playerNum].pos)
+
+def getBallOwner(game: GameState):
+    if game._ball_possession.type == 0:  # BallPossessionType.Possessed
+        num = game._ball_possession.data.possessed.owner
+        if num > 9:
+            num = -1
+        return num
+    else:
+        return -1  # Ball not possessed
+
+def getNearestOp(game: GameState, playerNum):
+    global teamNum
+    curPos = game.players[playerNum].pos 
+    minDist = float('inf')
+    minPlayer = -1 
+    for i in game.team(teamNum): 
+        dist = curPos.dist(game.players[i].pos)
+        if dist < minDist: 
+            minDist = dist
+            minPlayer = i 
+    return minPlayer
+
+def getBallPos(game: GameState) -> Vec2:
+    return(game.ball.pos)
+
+def getNearestTeammate(player: PlayerState.id, game: GameState):
+    global teamNum
+    nearestpos = Vec2(-1, -1)
+    teamplayers = game.team(teamNum)
+    for teammate in teamplayers:
+        if teammate.id != player:
+            if nearestpos == Vec2(-1, -1):
+                nearestpos = teammate.pos
+                nearestid = teammate.id
+            elif teamplayers[player].pos.dist(teammate.pos) < teamplayers[player].pos.dist(nearestpos):
+                nearestpos = teammate.pos
+                nearestid = teammate.id
+    return nearestid
+
+def getAllTeammates(game: GameState):
+    global teamNum
+    return game.team(teamNum)
+
+def getAllOps(game: GameState):
+    global teamNum
+    return game.team(not teamNum)
+
+def checkMove(game: GameState, playerNum): 
 
     config = get_config()
 
-    # print(game.players[3].pos.x)
-    if (game.players[3].pos.x >= 799): 
-        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[3].pos)
+    endX = 750 
+    endY = 500
 
-    if (game.players[3].pos.x < 500): 
-        return PlayerAction(Vec2(500, 300) - game.players[3].pos, None) #movement 
-    if (game.players[3].pos.x >= 499): 
-        return PlayerAction(Vec2(800, 350) - game.players[3].pos, None)
+
+    print("ball owned by: ", getBallOwner(game))
+    print("nearest OP player: ", getNearestOp(game, 2))
+
+    if (game.players[playerNum].pos.x >= endX-1): 
+        return PlayerAction(Vec2(0,0), config.field.goal_other() - game.players[playerNum].pos)
+    if (game.players[playerNum].pos.x >= 499): 
+        return PlayerAction(gotoPos(game, 2, Vec2(endX, endY)), None)
+    if (game.players[playerNum].pos.x < 500): 
+        return PlayerAction(gotoPos(game, 2,  config.field.center()), None)
+
     else: 
         return PlayerAction(Vec2(0,0), None)
 
@@ -63,14 +124,12 @@ def ball_chase(game: GameState) -> List[PlayerAction]:
         Vec2(0, 0), None
     )
 
-    do_something = checkMove(game)
+    do_something = checkMove(game, 2)
 
-    
-
-    actions.append(do_nothing)
     actions.append(do_nothing)
     actions.append(do_nothing)
     actions.append(do_something)
+    actions.append(do_nothing)
 
 
     return actions
